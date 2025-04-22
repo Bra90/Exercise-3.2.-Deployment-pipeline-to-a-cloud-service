@@ -1,32 +1,23 @@
-name: Simple Deploy
+name: Deploy to My Server
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      # Optional: build your app, e.g., for Node.js
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build
-        run: npm run build
-
-      # Deploy via SSH (replace with your own deploy script/commands)
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v1
+      - name: Add SSH Key
+        uses: shimataro/ssh-key-action@v2
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: your-ssh-username
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            cd /path/to/your/app
-            git pull
-            docker compose up -d --build
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.SERVER_IP }}
+
+      - name: Deploy via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+          "cd ${{ secrets.APP_DIR }} && git pull && docker compose up -d --build"
